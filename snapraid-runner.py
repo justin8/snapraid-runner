@@ -38,8 +38,7 @@ def snapraid_command(command, args={}, *, allow_statuscodes=[]):
     Run snapraid command
     Raises subprocess.CalledProcessError if errorlevel != 0
     """
-    arguments = ["--conf", config["snapraid"]["config"],
-                 "--quiet"]
+    arguments = ["--quiet"]
     for (k, v) in args.items():
         arguments.extend(["--" + k, str(v)])
     p = subprocess.Popen(
@@ -247,10 +246,6 @@ def run():
         logging.error("The configured snapraid executable \"{}\" does not "
                       "exist or is not a file".format(
                           config["snapraid"]["executable"]))
-        finish(False)
-    if not os.path.isfile(config["snapraid"]["config"]):
-        logging.error("Snapraid config does not exist at " +
-                      config["snapraid"]["config"])
         finish(False)
 
     if config["snapraid"]["touch"]:
