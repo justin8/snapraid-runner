@@ -11,6 +11,7 @@ import time
 import traceback
 from collections import Counter, defaultdict
 from io import StringIO
+import requests  # For healthcheck pings
 
 # Global variables
 config = None
@@ -115,6 +116,29 @@ def send_email(success):
     server.quit()
 
 
+def send_healthcheck():
+    url = ""
+    if config.get("healthcheck"):
+        url = config["healthcheck"].get("healthcheck-url", "")
+    if not url:
+        return
+    retries = 5
+    delay_seconds = 3
+    for attempt in range(1, retries + 1):
+        try:
+            resp = requests.get(url, timeout=10)
+            if resp.status_code == 200:
+                logging.info("Healthcheck ping succeeded")
+                return
+            else:
+                logging.warning(f"Healthcheck ping failed with status {resp.status_code}")
+        except Exception as e:
+            logging.warning(f"Healthcheck ping attempt {attempt} failed: {e}")
+        if attempt < retries:
+            time.sleep(delay_seconds)
+    logging.error("Healthcheck ping failed after multiple attempts")
+
+
 def finish(is_success):
     if ("error", "success")[is_success] in config["email"]["sendon"]:
         try:
@@ -123,6 +147,7 @@ def finish(is_success):
             logging.exception("Failed to send email")
     if is_success:
         logging.info("Run finished successfully")
+        send_healthcheck()
     else:
         logging.error("Run failed")
     sys.exit(0 if is_success else 1)
@@ -132,7 +157,7 @@ def load_config(args):
     global config
     parser = configparser.RawConfigParser()
     parser.read(args.conf)
-    sections = ["snapraid", "logging", "email", "smtp", "scrub"]
+    sections = ["snapraid", "logging", "email", "smtp", "scrub", "healthcheck"]  # Added healthcheck
     config = dict((x, defaultdict(lambda: "")) for x in sections)
     for section in parser.sections():
         for (k, v) in parser.items(section):

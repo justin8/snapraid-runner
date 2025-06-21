@@ -40,3 +40,6 @@ enabled = false
 plan = 12
 ; minimum block age (in days) for scrubbing. Only used with percentage plans
 older-than = 10
+
+[healthcheck]
+;healthcheck-url = https://my.health.check/
